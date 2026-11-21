@@ -16,6 +16,14 @@ class Settings(BaseSettings):
     api_key: str | None = None
     rate_limit_per_minute: int = 30
     authorized_repositories: str = ""
+    groq_api_key: str | None = None
+    groq_endpoint: str = "https://api.groq.com/openai/v1/chat/completions"
+    groq_model: str = "llama-3.3-70b-versatile"
+    gemini_api_key: str | None = None
+    gemini_endpoint: str = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+    gemini_model: str = "gemini-2.0-flash"
+    ai_timeout_seconds: float = 30.0
+    ai_max_retries: int = 2
     allow_private_ai: bool = False
     cors_origins: str = "http://localhost:5173"
 

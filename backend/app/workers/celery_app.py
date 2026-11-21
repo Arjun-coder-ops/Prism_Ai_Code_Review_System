@@ -9,6 +9,7 @@ from kombu.exceptions import OperationalError
 from sqlalchemy import delete, or_, select
 from sqlalchemy.orm import selectinload
 
+from app.ai.providers import ReviewContext, build_provider, parse_candidates
 from app.analysis.static import candidates_from_diff
 from app.core.config import get_settings
 from app.core.errors import PrismError
@@ -162,17 +163,34 @@ async def _process_review(review_id: str) -> str:
         await session.commit()
 
         findings: list[Finding] = []
+        changed_lines: dict[str, list[Any]] = {}
+        diff_chunks: list[str] = []
         for file in files:
             patch = file.get("patch")
             path = file.get("filename")
             if not isinstance(patch, str) or not isinstance(path, str):
                 continue
             diff_lines = parse_unified_diff(patch, path)
+            changed_lines[path] = diff_lines
+            diff_chunks.append(f"diff --git a/{path} b/{path}\n{patch}")
             for candidate in candidates_from_diff(diff_lines):
                 verified = verify_candidate(candidate, diff_lines)
                 if verified is None:
                     continue
                 findings.append(Finding(review_id=review.id, path=candidate.path, start_line=candidate.line, end_line=candidate.line, severity=candidate.severity, category=candidate.category, title=candidate.title, explanation=candidate.explanation, evidence=verified.evidence, verification_state="verified"))
+        if not (review.repository is not None and review.repository.is_private and not settings.allow_private_ai):
+            provider = build_provider(settings)
+            payload = await provider.candidates(ReviewContext("\n".join(diff_chunks)[:100_000], bool(review.repository and review.repository.is_private)))
+            review.ai_provider = provider.provider_name
+            review.ai_tokens = provider.last_usage.total_tokens
+            for candidate in parse_candidates(payload):
+                lines = changed_lines.get(candidate.path)
+                if not lines:
+                    continue
+                verified = verify_candidate(candidate, lines)
+                if verified is None or any(finding.path == candidate.path and finding.start_line == candidate.line for finding in findings):
+                    continue
+                findings.append(Finding(review_id=review.id, path=candidate.path, start_line=candidate.line, end_line=candidate.line, severity=candidate.severity, category=candidate.category, title=candidate.title, explanation=candidate.explanation, evidence=verified.evidence | {"provider": provider.provider_name}, verification_state="verified"))
         await session.execute(delete(Finding).where(Finding.review_id == review.id))
         session.add_all(findings)
         review.status = ReviewStatus.completed

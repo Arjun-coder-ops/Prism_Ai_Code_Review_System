@@ -13,6 +13,7 @@
 - Outbox dispatch is capped at ten attempts with exponential delay metadata; stale review leases are recoverable by a scheduled task.
 - Review-detail, findings, impact, and test-gap reads require the configured API key and repository allowlist in protected deployments.
 - PostgreSQL/Redis integration tests cover duplicate delivery, expired lease recovery, concurrent claims, and durable outbox state.
+- Groq/Gemini prompts explicitly treat repository diffs as untrusted data; provider candidates must include exact changed-line evidence before persistence, and private source is skipped unless explicitly authorized.
 
 ## Remaining blockers
 

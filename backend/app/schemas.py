@@ -43,6 +43,9 @@ class ReviewOut(BaseModel):
     created_at: datetime
     findings: list[FindingOut] = Field(default_factory=list)
     changed_paths: list[str] = Field(default_factory=list)
+    ai_provider: str | None = None
+    ai_tokens: int = 0
+    ai_cost_usd: float | None = None
 
 
 class HealthOut(BaseModel):

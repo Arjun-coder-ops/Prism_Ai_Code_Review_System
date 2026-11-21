@@ -13,14 +13,15 @@ This pull request advances `arjunpush` toward `main` with a focused security and
 - Review-detail, findings, impact, and test-gap reads enforce API-key and repository allowlist checks.
 - Retry exhaustion is terminal and stale recovery emits durable redispatch work without duplicating findings.
 - Docker PostgreSQL/Redis integration tests cover duplicate deliveries, expired leases, concurrent claims, and outbox durability.
-- Migration `0005_authorization_recovery`.
-- Regression coverage expanded to 30 local tests plus 5 Docker integration tests.
+- M4 Groq-first/Gemini-fallback adapters with structured untrusted-diff prompts, bounded retries, private-source gating, usage capture, and worker integration.
+- Migrations `0005_authorization_recovery` and `0006_ai_usage`.
+- Regression coverage expanded to 32 local tests plus 5 Docker integration tests.
 
 ## Verification
 
 - Ruff: passed
 - Mypy: passed
-- Pytest: 30 passed locally; 5 Docker integration tests passed
-- Alembic upgrade against Docker PostgreSQL: passed at `0005_authorization_recovery`
+- Pytest: 32 passed locally; 5 Docker integration tests passed
+- Alembic upgrade against Docker PostgreSQL: passed at `0006_ai_usage`
 
 Live GitHub credentials, distributed deployment checks, and production provider credentials remain explicitly out of scope for this local verification.
