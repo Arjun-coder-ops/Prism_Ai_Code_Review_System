@@ -21,6 +21,7 @@ from app.services.github import (
     ensure_head_sha_stable,
     fetch_pull_request,
     fetch_pull_request_files,
+    fetch_repository_tree,
     parse_pull_request_url,
 )
 from app.verification.evidence import verify_candidate
@@ -159,6 +160,7 @@ async def _process_review(review_id: str) -> str:
         ensure_head_sha_stable(initial_sha, latest_metadata["head"]["sha"])
         review.head_sha = initial_sha
         review.changed_paths = [path for file in files if isinstance((path := file.get("filename")), str)]
+        review.test_paths = await fetch_repository_tree(ref, initial_sha, token)
         review.status = ReviewStatus.analyzing
         await session.commit()
 

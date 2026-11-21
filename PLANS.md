@@ -8,7 +8,7 @@
 | M3 GitHub App | JWT, installation tokens, webhook signature/idempotency, publication | Installation-scoped webhook authorization implemented; live App and publication pending |
 | M4 AI verification | Provider adapters, structured candidates, independent evidence verification/abstention | Groq-first/Gemini-fallback pipeline integrated with bounded retries, private-source gating, usage capture, and evidence verification; live credentials pending |
 | M5 Intelligence | Tree-sitter context and change impact | Persisted changed paths and impact API implemented; Tree-sitter pending |
-| M6 Test gaps | Test discovery and actionable gap recommendations | Test-gap API implemented; repository test discovery pending |
+| M6 Test gaps | Test discovery and actionable gap recommendations | Commit-pinned repository-tree discovery is persisted and used by the test-gap API; symbol/test relationship analysis pending |
 | M7 Evaluations | Versioned datasets, graders and reports | Versioned `review-v1` fixture and executable regression test implemented; broader labeled datasets pending |
 | M8 Security/observability | Auth, rate limits, metrics/traces, retention and recovery tests | API-key gate, intake rate limit, metrics and security regression tests implemented; distributed auth/tracing/retention pending |
 | M9 Frontend | Accessible repository/review workspace and responsive browser coverage | In progress |

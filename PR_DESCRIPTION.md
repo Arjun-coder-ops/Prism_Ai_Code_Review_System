@@ -15,6 +15,7 @@ This pull request advances `arjunpush` toward `main` with a focused security and
 - Docker PostgreSQL/Redis integration tests cover duplicate deliveries, expired leases, concurrent claims, and outbox durability.
 - M4 Groq-first/Gemini-fallback adapters with structured untrusted-diff prompts, bounded retries, private-source gating, usage capture, and worker integration.
 - Migrations `0005_authorization_recovery` and `0006_ai_usage`.
+- M6 persists the commit-pinned GitHub repository tree and uses it for test-gap recommendations.
 - Regression coverage expanded to 32 local tests plus 5 Docker integration tests.
 
 ## Verification
@@ -22,6 +23,6 @@ This pull request advances `arjunpush` toward `main` with a focused security and
 - Ruff: passed
 - Mypy: passed
 - Pytest: 32 passed locally; 5 Docker integration tests passed
-- Alembic upgrade against Docker PostgreSQL: passed at `0006_ai_usage`
+- Alembic upgrade against Docker PostgreSQL: passed at `0007_test_paths`
 
 Live GitHub credentials, distributed deployment checks, and production provider credentials remain explicitly out of scope for this local verification.

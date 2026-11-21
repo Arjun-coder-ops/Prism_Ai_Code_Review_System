@@ -112,7 +112,7 @@ async def review_test_gaps(review_id: uuid.UUID, session: SessionDep) -> list[di
     if review is None:
         raise PrismError("review_not_found", "Review does not exist.", 404)
     ensure_repository_access(review.repository.full_name)
-    gaps = recommend_test_gaps(review.changed_paths, set())
+    gaps = recommend_test_gaps(review.changed_paths, set(review.test_paths))
     return [{"source_path": gap.source_path, "suggested_path": gap.suggested_path, "reason": gap.reason} for gap in gaps]
 
 

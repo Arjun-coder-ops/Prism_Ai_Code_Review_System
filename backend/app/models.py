@@ -45,6 +45,7 @@ class Review(Base):
     attempt_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     lease_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     changed_paths: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default="[]")
+    test_paths: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default="[]")
     ai_provider: Mapped[str | None] = mapped_column(String(32))
     ai_tokens: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     ai_cost_usd: Mapped[float | None] = mapped_column()

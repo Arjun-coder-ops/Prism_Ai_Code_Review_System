@@ -8,7 +8,7 @@ Observed in this workspace:
 - `python -m mypy app`: passed with no issues.
 - `python -m pytest -q`: passed, 32 tests with 5 integration tests skipped by default, including provider selection/fallback, stale-SHA, strict evidence, API-key, repository allowlist, retry-state, and executable `review-v1` regression coverage.
 - `PRISM_INTEGRATION=1 python -m pytest -q tests/integration` against Docker PostgreSQL/Redis: passed, 5 tests covering Redis reachability, duplicate deliveries, expired leases, concurrent claims, and pending outbox retry state.
-- `python -m alembic upgrade head` from `backend/` against Docker PostgreSQL: passed; current revision `0006_ai_usage`.
+- `python -m alembic upgrade head` from `backend/` against Docker PostgreSQL: passed; current revision `0007_test_paths`.
 - PostgreSQL schema query: installation-bound repositories, bounded outbox retry fields, M3 event/outbox tables, and the `reviews.changed_paths` intelligence field are present.
 - `npm run build`: passed with Vite.
 - The local in-app browser could not reach the Vite dev server, so rendered viewport/accessibility evidence is explicitly untested; source and production-build checks passed.

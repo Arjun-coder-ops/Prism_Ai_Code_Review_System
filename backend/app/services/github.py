@@ -81,3 +81,20 @@ async def fetch_pull_request_files(ref: PullRequestRef, token: str | None = None
             if len(page_files) < 100:
                 break
     return files
+
+
+async def fetch_repository_tree(ref: PullRequestRef, commit_sha: str, token: str | None = None) -> list[str]:
+    headers = {"Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28"}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    url = f"https://api.github.com/repos/{ref.owner}/{ref.repo}/git/trees/{commit_sha}?recursive=1"
+    async with httpx.AsyncClient(timeout=httpx.Timeout(20.0, connect=5.0), follow_redirects=False) as client:
+        response = await client.get(url, headers=headers)
+    if response.status_code == 429 or response.status_code >= 500:
+        raise PrismError("github_tree_unavailable", "GitHub repository contents are temporarily unavailable.", 503)
+    if response.status_code >= 400:
+        raise PrismError("github_tree_failed", "GitHub did not return the commit tree.", 502)
+    payload = response.json()
+    if not isinstance(payload, dict) or payload.get("truncated") is True or not isinstance(payload.get("tree"), list):
+        raise PrismError("github_invalid_tree", "GitHub returned an incomplete repository tree.", 502)
+    return [item["path"] for item in payload["tree"] if isinstance(item, dict) and item.get("type") == "blob" and isinstance(item.get("path"), str)]
