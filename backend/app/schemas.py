@@ -42,6 +42,7 @@ class ReviewOut(BaseModel):
     error_message: str | None
     created_at: datetime
     findings: list[FindingOut] = Field(default_factory=list)
+    changed_paths: list[str] = Field(default_factory=list)
 
 
 class HealthOut(BaseModel):

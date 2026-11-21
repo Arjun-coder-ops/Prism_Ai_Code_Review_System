@@ -7,8 +7,8 @@
 | M2 Durable processing | Atomic claims, leases, retries, cancellation and outage recovery tests | Current slice implemented; crash-recovery integration pending |
 | M3 GitHub App | JWT, installation tokens, webhook signature/idempotency, publication | Current slice implemented; live App pending |
 | M4 AI verification | Provider adapters, structured candidates, independent evidence verification/abstention | Current slice implemented; live providers pending |
-| M5 Intelligence | Tree-sitter context and change impact | Change-impact helper implemented; Tree-sitter pending |
-| M6 Test gaps | Test discovery and actionable gap recommendations | Recommendation helper implemented; discovery pending |
+| M5 Intelligence | Tree-sitter context and change impact | Persisted changed paths and impact API implemented; Tree-sitter pending |
+| M6 Test gaps | Test discovery and actionable gap recommendations | Test-gap API implemented; repository test discovery pending |
 | M7 Evaluations | Versioned datasets, graders and reports | Scoring helper implemented; datasets pending |
 | M8 Security/observability | Auth, rate limits, metrics/traces, retention and recovery tests | Planned |
 | M9 Frontend | Accessible repository/review workspace and responsive browser coverage | In progress |

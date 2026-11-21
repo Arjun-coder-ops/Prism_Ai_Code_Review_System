@@ -18,6 +18,8 @@ from app.core.errors import PrismError
 from app.core.metrics import review_requests
 from app.db.session import get_session
 from app.github.webhooks import payload_hash, verify_signature
+from app.intelligence.impact import infer_change_impact
+from app.intelligence.test_gaps import recommend_test_gaps
 from app.models import Finding, OutboxEvent, Repository, Review, ReviewStatus, WebhookDelivery
 from app.schemas import FindingOut, HealthOut, ReviewCreate, ReviewOut
 from app.workers.celery_app import dispatch_outbox, enqueue_review
@@ -78,6 +80,23 @@ async def get_review(review_id: uuid.UUID, session: SessionDep) -> Review:
 @router.get("/reviews/{review_id}/findings", response_model=list[FindingOut])
 async def list_findings(review_id: uuid.UUID, session: SessionDep) -> list[Finding]:
     return list((await session.scalars(select(Finding).where(Finding.review_id == review_id).order_by(Finding.start_line))).all())
+
+
+@router.get("/reviews/{review_id}/impact")
+async def review_impact(review_id: uuid.UUID, session: SessionDep) -> list[dict[str, object]]:
+    review = await session.scalar(select(Review).where(Review.id == review_id))
+    if review is None:
+        raise PrismError("review_not_found", "Review does not exist.", 404)
+    return [{"component": item.component, "reason": item.reason, "confidence": item.confidence} for item in infer_change_impact(review.changed_paths)]
+
+
+@router.get("/reviews/{review_id}/test-gaps")
+async def review_test_gaps(review_id: uuid.UUID, session: SessionDep) -> list[dict[str, str]]:
+    review = await session.scalar(select(Review).where(Review.id == review_id))
+    if review is None:
+        raise PrismError("review_not_found", "Review does not exist.", 404)
+    gaps = recommend_test_gaps(review.changed_paths, set())
+    return [{"source_path": gap.source_path, "suggested_path": gap.suggested_path, "reason": gap.reason} for gap in gaps]
 
 
 @router.post("/webhooks/github", status_code=status.HTTP_202_ACCEPTED)

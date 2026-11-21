@@ -7,8 +7,8 @@ Observed in this workspace:
 - `python -m ruff check app tests`: passed.
 - `python -m mypy app`: passed with no issues.
 - `python -m pytest -q`: passed, 23 tests.
-- `python -m alembic upgrade head` from `backend/` against Docker PostgreSQL: passed; current revision `0003_github_events`.
-- PostgreSQL schema query: 3 M3 tables present in addition to the foundation tables.
+- `python -m alembic upgrade head` from `backend/` against Docker PostgreSQL: passed; current revision `0004_review_paths`.
+- PostgreSQL schema query: M3 event/outbox tables plus the `reviews.changed_paths` intelligence field are present in addition to the foundation tables.
 - `npm run build`: passed with Vite.
 - The local in-app browser could not reach the Vite dev server, so rendered viewport/accessibility evidence is explicitly untested; source and production-build checks passed.
 - `docker compose config`: passed.

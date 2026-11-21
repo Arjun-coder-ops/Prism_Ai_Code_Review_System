@@ -42,6 +42,7 @@ class Review(Base):
     error_message: Mapped[str | None] = mapped_column(Text)
     attempt_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     lease_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    changed_paths: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default="[]")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     repository: Mapped[Repository] = relationship(back_populates="reviews")

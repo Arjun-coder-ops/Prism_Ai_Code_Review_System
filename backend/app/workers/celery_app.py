@@ -99,6 +99,7 @@ async def _process_review(review_id: str) -> str:
         metadata = await fetch_pull_request(ref, settings.github_token)
         files = await fetch_pull_request_files(ref, settings.github_token)
         review.head_sha = metadata["head"]["sha"]
+        review.changed_paths = [path for file in files if isinstance((path := file.get("filename")), str)]
         review.status = ReviewStatus.analyzing
         await session.commit()
 
