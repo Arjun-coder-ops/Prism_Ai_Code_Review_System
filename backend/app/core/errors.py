@@ -7,5 +7,7 @@ class PrismError(Exception):
         self.code, self.message, self.status_code = code, message, status_code
 
 
-async def prism_error_handler(_: Request, exc: PrismError) -> JSONResponse:
-    return JSONResponse(status_code=exc.status_code, content={"error": {"code": exc.code, "message": exc.message}})
+async def prism_error_handler(_: Request, exc: Exception) -> JSONResponse:
+    if isinstance(exc, PrismError):
+        return JSONResponse(status_code=exc.status_code, content={"error": {"code": exc.code, "message": exc.message}})
+    return JSONResponse(status_code=500, content={"error": {"code": "internal_error", "message": "An unexpected error occurred."}})

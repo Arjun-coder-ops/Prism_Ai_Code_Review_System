@@ -1,11 +1,14 @@
 from logging.config import fileConfig
+import os
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 from app.db.base import Base
 from app import models  # noqa: F401
 
 config = context.config
-if config.config_file_name:
+if os.getenv("PRISM_ALEMBIC_DATABASE_URL"):
+    config.set_main_option("sqlalchemy.url", os.environ["PRISM_ALEMBIC_DATABASE_URL"])
+if config.config_file_name and config.get_section("loggers"):
     fileConfig(config.config_file_name)
 target_metadata = Base.metadata
 

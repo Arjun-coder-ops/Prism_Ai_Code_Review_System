@@ -31,6 +31,6 @@ def parse_unified_diff(patch: str, path: str) -> list[DiffLine]:
         elif raw.startswith("-") and not raw.startswith("---"):
             lines.append(DiffLine(path, None, "deleted", raw[1:]))
         else:
-            lines.append(DiffLine(path, new_line, "context", raw[1:] if raw.startswith(" ") else raw))
+            lines.append(DiffLine(path, new_line, "context", raw.removeprefix(" ")))
             new_line += 1
     return lines

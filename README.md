@@ -1,6 +1,6 @@
 # PRISM
 
-PRISM (Pull Request Intelligence, Security, and Monitoring) is an evidence-first review workspace. This repository contains a working foundation: FastAPI health/readiness APIs, PostgreSQL review records, safe GitHub PR URL validation, unified-diff parsing, Celery/Redis queue wiring, and a small React client that submits reviews.
+PRISM (Pull Request Intelligence, Security, and Monitoring) is an evidence-first review workspace. This repository contains a working foundation: FastAPI health/readiness APIs, PostgreSQL review records, safe GitHub PR URL validation, commit-SHA-aware GitHub retrieval, unified-diff parsing, Celery/Redis queue wiring, deterministic evidence-backed findings, and a small React client that submits reviews.
 
 ## Run locally
 
@@ -8,7 +8,7 @@ PRISM (Pull Request Intelligence, Security, and Monitoring) is an evidence-first
 2. Start dependencies and services with `docker compose up --build`.
 3. Open <http://localhost:5173> and submit a canonical GitHub pull-request URL.
 
-The current slice does not claim live GitHub or LLM execution without credentials. Review retrieval and provider adapters are the next milestone; invalid hosts and malformed paths are rejected before any network request.
+The current slice requires no LLM key and uses deterministic checks for `eval(` and silently discarded exceptions. Live GitHub App/webhook publication and external LLM providers remain gated on credentials; invalid hosts, malformed repository names, and invalid PR numbers are rejected before any network request.
 
 ## Checks
 

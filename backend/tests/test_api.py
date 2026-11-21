@@ -1,8 +1,11 @@
-from fastapi.testclient import TestClient
-from app.main import create_app
+from app.api import health
 
 
 def test_health() -> None:
-    response = TestClient(create_app()).get("/api/health")
-    assert response.status_code == 200
-    assert response.json()["status"] == "ok"
+    coroutine = health()
+    try:
+        coroutine.send(None)
+    except StopIteration as completed:
+        response = completed.value
+    assert response.status == "ok"
+    assert response.version == "0.1.0"

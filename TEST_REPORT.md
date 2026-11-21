@@ -4,7 +4,16 @@ The focused suite is in `backend/tests` and covers the health endpoint, unsafe U
 
 Observed in this workspace:
 
-- `python -m compileall -q backend/app backend/tests`: passed.
-- `python -m pytest backend/tests -q`: not run because `pytest` is not installed (`No module named pytest`).
+- `python -m ruff check app tests`: passed.
+- `python -m mypy app`: passed with no issues.
+- `python -m pytest -q`: passed, 21 tests.
+- `python -m alembic upgrade head` from `backend/` against Docker PostgreSQL: passed; current revision `0003_github_events`.
+- PostgreSQL schema query: 3 M3 tables present in addition to the foundation tables.
+- `npm run build`: passed with Vite.
+- The local in-app browser could not reach the Vite dev server, so rendered viewport/accessibility evidence is explicitly untested; source and production-build checks passed.
+- `docker compose config`: passed.
+- `docker compose up -d --build api worker frontend`, then `GET http://localhost:8000/api/health`: passed (`{"status":"ok","version":"0.1.0"}`); frontend returned HTTP 200.
+- `.github/workflows/ci.yml` parsed locally and now provisions PostgreSQL/Redis, runs Ruff, mypy, migrations, and pytest before the frontend job.
+- Partial archive is verified after clean extraction; its SHA-256 is recorded in the adjacent `.sha256` sidecar file.
 
 Live PostgreSQL, Redis, GitHub, and browser checks remain pending because no external credentials were supplied.

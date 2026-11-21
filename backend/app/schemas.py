@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import Any
+
 from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field, field_validator
 
 
@@ -26,7 +28,7 @@ class FindingOut(BaseModel):
     category: str
     title: str
     explanation: str
-    evidence: dict
+    evidence: dict[str, Any]
     verification_state: str
 
 

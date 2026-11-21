@@ -1,3 +1,3 @@
-from app.models import Finding, Repository, Review
+from app.models import Finding, GithubInstallation, OutboxEvent, Repository, Review, WebhookDelivery
 
-__all__ = ["Finding", "Repository", "Review"]
+__all__ = ["Finding", "GithubInstallation", "OutboxEvent", "Repository", "Review", "WebhookDelivery"]

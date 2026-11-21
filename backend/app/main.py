@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.api import router
 from app.core.config import get_settings
@@ -13,7 +14,7 @@ def create_app() -> FastAPI:
     app.add_exception_handler(PrismError, prism_error_handler)
 
     @app.exception_handler(Exception)
-    async def unhandled(_: Request, __: Exception):
+    async def unhandled(_: Request, __: Exception) -> JSONResponse:
         return await prism_error_handler(_, PrismError("internal_error", "An unexpected error occurred.", 500))
 
     app.include_router(router)
