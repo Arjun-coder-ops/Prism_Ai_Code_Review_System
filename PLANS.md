@@ -9,7 +9,7 @@
 | M4 AI verification | Provider adapters, structured candidates, independent evidence verification/abstention | Current slice implemented; live providers pending |
 | M5 Intelligence | Tree-sitter context and change impact | Persisted changed paths and impact API implemented; Tree-sitter pending |
 | M6 Test gaps | Test discovery and actionable gap recommendations | Test-gap API implemented; repository test discovery pending |
-| M7 Evaluations | Versioned datasets, graders and reports | Scoring helper implemented; datasets pending |
+| M7 Evaluations | Versioned datasets, graders and reports | Versioned `review-v1` fixture and executable regression test implemented; broader labeled datasets pending |
 | M8 Security/observability | Auth, rate limits, metrics/traces, retention and recovery tests | Planned |
 | M9 Frontend | Accessible repository/review workspace and responsive browser coverage | In progress |
 | M10 Deployment | Hardened images, CI gates, migration and recovery runbooks | In progress |

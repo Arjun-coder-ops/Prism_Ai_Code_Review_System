@@ -6,7 +6,7 @@ Observed in this workspace:
 
 - `python -m ruff check app tests`: passed.
 - `python -m mypy app`: passed with no issues.
-- `python -m pytest -q`: passed, 23 tests.
+- `python -m pytest -q`: passed, 24 tests, including the executable `review-v1` evaluation fixture.
 - `python -m alembic upgrade head` from `backend/` against Docker PostgreSQL: passed; current revision `0004_review_paths`.
 - PostgreSQL schema query: M3 event/outbox tables plus the `reviews.changed_paths` intelligence field are present in addition to the foundation tables.
 - `npm run build`: passed with Vite.

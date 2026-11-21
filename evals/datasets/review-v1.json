@@ -1,0 +1,20 @@
+{
+  "version": "review-v1",
+  "cases": [
+    {
+      "case_id": "clean-pr-abstention",
+      "expected": [],
+      "predicted": []
+    },
+    {
+      "case_id": "duplicate-finding-deduplication",
+      "expected": [["src/auth.py", 12]],
+      "predicted": [["src/auth.py", 12]]
+    },
+    {
+      "case_id": "source-location-accuracy",
+      "expected": [["src/parser.py", 44]],
+      "predicted": [["src/parser.py", 44], ["src/parser.py", 49]]
+    }
+  ]
+}
