@@ -17,6 +17,11 @@ class PullRequestRef:
     number: int
 
 
+def ensure_head_sha_stable(initial_sha: str, latest_sha: str) -> None:
+    if initial_sha != latest_sha:
+        raise PrismError("stale_review", "The pull request changed while it was being analyzed; retry the review.", 409)
+
+
 def parse_pull_request_url(url: str) -> PullRequestRef:
     parsed = urlparse(url)
     if parsed.scheme != "https" or parsed.netloc != "github.com" or parsed.query or parsed.fragment or parsed.params:

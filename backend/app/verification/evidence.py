@@ -14,7 +14,7 @@ class VerifiedFinding:
 
 def verify_candidate(candidate: CandidateFinding, lines: list[DiffLine]) -> VerifiedFinding | None:
     for line in lines:
-        if line.path == candidate.path and line.line == candidate.line and line.kind == "added" and candidate.evidence in line.content:
+        if line.path == candidate.path and line.line == candidate.line and line.kind == "added" and candidate.evidence.strip() == line.content.strip():
             return VerifiedFinding(candidate, {"line": line.content, "source": "unified_diff"})
     return None
 

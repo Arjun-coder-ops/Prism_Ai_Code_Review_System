@@ -16,11 +16,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import get_settings
 from app.core.errors import PrismError
 from app.core.metrics import review_requests
+from app.core.security import enforce_rate_limit, require_api_key
 from app.db.session import get_session
 from app.github.webhooks import payload_hash, verify_signature
 from app.intelligence.impact import infer_change_impact
 from app.intelligence.test_gaps import recommend_test_gaps
-from app.models import Finding, OutboxEvent, Repository, Review, ReviewStatus, WebhookDelivery
+from app.models import (
+    Finding,
+    GithubInstallation,
+    OutboxEvent,
+    Repository,
+    Review,
+    ReviewStatus,
+    WebhookDelivery,
+)
 from app.schemas import FindingOut, HealthOut, ReviewCreate, ReviewOut
 from app.workers.celery_app import dispatch_outbox, enqueue_review
 
@@ -45,7 +54,7 @@ async def readiness(session: SessionDep) -> HealthOut:
     return HealthOut(status="ready", version="0.1.0")
 
 
-@router.post("/reviews", response_model=ReviewOut, status_code=status.HTTP_202_ACCEPTED)
+@router.post("/reviews", response_model=ReviewOut, status_code=status.HTTP_202_ACCEPTED, dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)])
 async def create_review(payload: ReviewCreate, session: SessionDep) -> Review:
     from app.services.github import parse_pull_request_url
     ref = parse_pull_request_url(str(payload.url))
@@ -99,7 +108,7 @@ async def review_test_gaps(review_id: uuid.UUID, session: SessionDep) -> list[di
     return [{"source_path": gap.source_path, "suggested_path": gap.suggested_path, "reason": gap.reason} for gap in gaps]
 
 
-@router.post("/webhooks/github", status_code=status.HTTP_202_ACCEPTED)
+@router.post("/webhooks/github", status_code=status.HTTP_202_ACCEPTED, dependencies=[Depends(enforce_rate_limit)])
 async def github_webhook(request: Request, session: SessionDep) -> dict[str, str]:
     body = await request.body()
     verify_signature(body, request.headers.get("x-hub-signature-256"), get_settings().github_webhook_secret)
@@ -118,26 +127,52 @@ async def github_webhook(request: Request, session: SessionDep) -> dict[str, str
     delivery = WebhookDelivery(delivery_id=delivery_id, event_name=event_name, payload_hash=payload_hash(body), processed_at=datetime.now(UTC))
     session.add(delivery)
     review_id: uuid.UUID | None = None
+    installation_data = payload.get("installation") or {}
+    installation_id = installation_data.get("id") if isinstance(installation_data, dict) else None
+    if event_name == "installation" and isinstance(installation_id, int):
+        account = installation_data.get("account") or {}
+        login = account.get("login") if isinstance(account, dict) else None
+        if not isinstance(login, str) or not login:
+            raise PrismError("invalid_installation_event", "Installation account information is required.", 400)
+        installation = await session.scalar(select(GithubInstallation).where(GithubInstallation.installation_id == installation_id))
+        if installation is None:
+            installation = GithubInstallation(installation_id=installation_id, account_login=login)
+            session.add(installation)
+        action = payload.get("action")
+        installation.account_login = login
+        installation.suspended_at = datetime.now(UTC) if action in {"suspend", "deleted"} else None
+        await session.commit()
+        return {"status": "installation_synced"}
     if event_name == "pull_request" and payload.get("action") in {"opened", "reopened", "synchronize"}:
         repository_data = payload.get("repository") or {}
         pull_request = payload.get("pull_request") or {}
         full_name = repository_data.get("full_name")
         number = payload.get("number")
         head_sha = (pull_request.get("head") or {}).get("sha")
-        if not isinstance(full_name, str) or not isinstance(number, int) or not isinstance(head_sha, str):
+        if not isinstance(full_name, str) or not isinstance(number, int) or not isinstance(head_sha, str) or not isinstance(installation_id, int):
             raise PrismError("invalid_pull_request_event", "Webhook lacks repository, PR number, or head SHA.", 400)
+        installation = await session.scalar(select(GithubInstallation).where(GithubInstallation.installation_id == installation_id))
+        if installation is None or installation.suspended_at is not None:
+            raise PrismError("installation_not_authorized", "The GitHub installation is not authorized.", 403)
         repo = await session.scalar(select(Repository).where(Repository.full_name == full_name))
         if repo is None:
-            repo = Repository(full_name=full_name, github_id=repository_data.get("id"))
+            repo = Repository(full_name=full_name, github_id=repository_data.get("id"), is_private=bool(repository_data.get("private")), installation_id=installation.id)
             session.add(repo)
             await session.flush()
+        elif repo.installation_id not in {None, installation.id}:
+            raise PrismError("repository_not_authorized", "The repository is not authorized for this installation.", 403)
+        else:
+            repo.installation_id = installation.id
+            repo.is_private = bool(repository_data.get("private"))
         review = await session.scalar(select(Review).where(Review.repository_id == repo.id, Review.pr_number == number, Review.head_sha == head_sha))
         if review is None:
             review = Review(repository_id=repo.id, pr_number=number, url=f"https://github.com/{full_name}/pull/{number}", head_sha=head_sha, status=ReviewStatus.queued)
             session.add(review)
             await session.flush()
         review_id = review.id
-        session.add(OutboxEvent(event_type="review.requested", aggregate_id=str(review.id), payload={"review_id": str(review.id), "head_sha": head_sha}))
+        existing_outbox = list((await session.scalars(select(OutboxEvent).where(OutboxEvent.event_type == "review.requested", OutboxEvent.aggregate_id == str(review.id)))).all())
+        if not any(event.payload.get("head_sha") == head_sha for event in existing_outbox):
+            session.add(OutboxEvent(event_type="review.requested", aggregate_id=str(review.id), payload={"review_id": str(review.id), "head_sha": head_sha}))
     await session.commit()
     if review_id is not None:
         try:

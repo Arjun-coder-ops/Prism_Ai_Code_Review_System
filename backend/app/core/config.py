@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     github_app_id: str | None = None
     github_webhook_secret: str | None = None
     github_private_key_path: str | None = None
+    api_key: str | None = None
+    rate_limit_per_minute: int = 30
     allow_private_ai: bool = False
     cors_origins: str = "http://localhost:5173"
 
