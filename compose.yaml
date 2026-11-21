@@ -34,6 +34,13 @@ services:
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
+  beat:
+    build: ./backend
+    command: celery -A app.workers.celery_app beat -l INFO
+    env_file: .env
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
   frontend:
     build: ./frontend
     depends_on: [api]

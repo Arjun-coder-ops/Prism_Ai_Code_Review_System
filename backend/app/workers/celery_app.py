@@ -6,7 +6,7 @@ from typing import Any
 
 from celery import Celery  # type: ignore[import-untyped]
 from kombu.exceptions import OperationalError
-from sqlalchemy import or_, select
+from sqlalchemy import delete, or_, select
 from sqlalchemy.orm import selectinload
 
 from app.analysis.static import candidates_from_diff
@@ -90,6 +90,9 @@ async def _recover_stale_reviews() -> int:
             review.status = ReviewStatus.queued
             review.lease_until = None
             review.error_message = "Recovered after an expired worker lease."
+            pending = await session.scalar(select(OutboxEvent).where(OutboxEvent.aggregate_id == str(review.id), OutboxEvent.published_at.is_(None), OutboxEvent.attempts < 10).limit(1))
+            if pending is None:
+                session.add(OutboxEvent(event_type="review.recovery.requested", aggregate_id=str(review.id), payload={"review_id": str(review.id)}))
             recovered += 1
     return recovered
 
@@ -99,18 +102,21 @@ def process_review(self: Any, review_id: str) -> str:
     try:
         return asyncio.run(_process_review(review_id))
     except PrismError as exc:
-        retryable = exc.status_code >= 500
-        asyncio.run(_set_review_state(review_id, ReviewStatus.queued if retryable else ReviewStatus.failed, exc.message))
-        if retryable and self.request.retries < self.max_retries:
-            raise self.retry(exc=exc, countdown=min(300, 2 ** (self.request.retries + 1))) from exc
+        retryable = exc.status_code >= 500 and self.request.retries < self.max_retries
+        asyncio.run(_set_review_state(review_id, retry_state(self.request.retries, self.max_retries) if exc.status_code >= 500 else ReviewStatus.failed, exc.message))
         if retryable:
-            return "failed"
+            raise self.retry(exc=exc, countdown=min(300, 2 ** (self.request.retries + 1))) from exc
         return "failed"
     except Exception as exc:
-        asyncio.run(_set_review_state(review_id, ReviewStatus.failed, str(exc)))
-        if self.request.retries >= self.max_retries:
+        retryable = self.request.retries < self.max_retries
+        asyncio.run(_set_review_state(review_id, retry_state(self.request.retries, self.max_retries), str(exc)))
+        if not retryable:
             raise
         raise self.retry(exc=exc, countdown=min(300, 2 ** (self.request.retries + 1))) from exc
+
+
+def retry_state(retries: int, max_retries: int) -> ReviewStatus:
+    return ReviewStatus.failed if retries >= max_retries else ReviewStatus.queued
 
 
 async def _set_review_state(review_id: str, state: ReviewStatus, error: str | None = None) -> None:
@@ -167,6 +173,7 @@ async def _process_review(review_id: str) -> str:
                 if verified is None:
                     continue
                 findings.append(Finding(review_id=review.id, path=candidate.path, start_line=candidate.line, end_line=candidate.line, severity=candidate.severity, category=candidate.category, title=candidate.title, explanation=candidate.explanation, evidence=verified.evidence, verification_state="verified"))
+        await session.execute(delete(Finding).where(Finding.review_id == review.id))
         session.add_all(findings)
         review.status = ReviewStatus.completed
         review.lease_until = None

@@ -17,12 +17,13 @@ Updated 2026-11-21.
 - M5/M6 review intelligence now persists changed file paths and exposes deterministic impact and test-gap recommendation endpoints.
 - M7 now includes a versioned `review-v1` evaluation fixture exercised by the regression suite.
 - Reliability/security increment adds installation-scoped webhook authorization, opt-in API-key protection, per-client intake rate limiting, bounded outbox retries with scheduled recovery, stale worker lease recovery, commit-SHA revalidation, and strict full-line evidence matching.
+- Compose now runs a dedicated Celery Beat service. Review-detail endpoints enforce the API key and repository allowlist, retry exhaustion is terminal, stale recovery emits durable outbox work, and finding persistence is idempotent. Docker integration coverage exercises PostgreSQL/Redis duplicate delivery, lease recovery, concurrent claims, and pending outbox behavior.
 - Frontend now includes a real review workspace with polling, status/error/empty states, verified findings, and inspected SHA display using live API responses.
 
 ## Not yet verified
 
 Live GitHub App credentials, LLM providers, and browser end-to-end tests are not configured in this environment. The in-app browser could not reach the local Vite server, so rendered viewport/accessibility evidence remains pending. No production deployment or external repository comments are performed by this change.
 
-Verification evidence: `ruff check app tests` passed; `mypy app` passed with no issues; `python -m pytest -q` passed with 28 tests; Alembic is at `0005_authorization_recovery` against Docker PostgreSQL; `npm run build` passed; `docker compose config` passed; the API health endpoint and frontend returned successfully from a full container smoke run. Live GitHub App/LLM credentials remain unconfigured.
+Verification evidence: `ruff check app tests` passed; `mypy app` passed with no issues; default `python -m pytest -q` passed with 30 tests and 5 integration skips; the Docker PostgreSQL/Redis integration suite passed 5 tests; Alembic is at `0005_authorization_recovery`; `npm run build` passed. Live GitHub App/LLM credentials remain unconfigured.
 
 Full tracked-source checkpoint archive: `C:\Users\gogua\OneDrive\Documents\ChatGPT\PRISM-Deliverables\PRISM-Full-Project-Checkpoint.zip` (clean extraction verified; checksum is in the adjacent `.sha256` sidecar file). Major live-provider, browser, and deployment requirements remain explicitly unfinished.

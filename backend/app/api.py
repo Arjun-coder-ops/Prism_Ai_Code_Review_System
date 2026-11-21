@@ -12,11 +12,12 @@ from kombu.exceptions import OperationalError
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.config import get_settings
 from app.core.errors import PrismError
 from app.core.metrics import review_requests
-from app.core.security import enforce_rate_limit, require_api_key
+from app.core.security import enforce_rate_limit, ensure_repository_access, require_api_key
 from app.db.session import get_session
 from app.github.webhooks import payload_hash, verify_signature
 from app.intelligence.impact import infer_change_impact
@@ -76,34 +77,41 @@ async def create_review(payload: ReviewCreate, session: SessionDep) -> Review:
     return review
 
 
-@router.get("/reviews/{review_id}", response_model=ReviewOut)
+@router.get("/reviews/{review_id}", response_model=ReviewOut, dependencies=[Depends(require_api_key)])
 async def get_review(review_id: uuid.UUID, session: SessionDep) -> Review:
-    review = await session.scalar(select(Review).where(Review.id == review_id))
+    review = await session.scalar(select(Review).options(selectinload(Review.repository)).where(Review.id == review_id))
     if review is None:
         from app.core.errors import PrismError
         raise PrismError("review_not_found", "Review does not exist.", 404)
+    ensure_repository_access(review.repository.full_name)
     await session.refresh(review, ["findings"])
     return review
 
 
-@router.get("/reviews/{review_id}/findings", response_model=list[FindingOut])
+@router.get("/reviews/{review_id}/findings", response_model=list[FindingOut], dependencies=[Depends(require_api_key)])
 async def list_findings(review_id: uuid.UUID, session: SessionDep) -> list[Finding]:
+    review = await session.scalar(select(Review).options(selectinload(Review.repository)).where(Review.id == review_id))
+    if review is None:
+        raise PrismError("review_not_found", "Review does not exist.", 404)
+    ensure_repository_access(review.repository.full_name)
     return list((await session.scalars(select(Finding).where(Finding.review_id == review_id).order_by(Finding.start_line))).all())
 
 
-@router.get("/reviews/{review_id}/impact")
+@router.get("/reviews/{review_id}/impact", dependencies=[Depends(require_api_key)])
 async def review_impact(review_id: uuid.UUID, session: SessionDep) -> list[dict[str, object]]:
-    review = await session.scalar(select(Review).where(Review.id == review_id))
+    review = await session.scalar(select(Review).options(selectinload(Review.repository)).where(Review.id == review_id))
     if review is None:
         raise PrismError("review_not_found", "Review does not exist.", 404)
+    ensure_repository_access(review.repository.full_name)
     return [{"component": item.component, "reason": item.reason, "confidence": item.confidence} for item in infer_change_impact(review.changed_paths)]
 
 
-@router.get("/reviews/{review_id}/test-gaps")
+@router.get("/reviews/{review_id}/test-gaps", dependencies=[Depends(require_api_key)])
 async def review_test_gaps(review_id: uuid.UUID, session: SessionDep) -> list[dict[str, str]]:
-    review = await session.scalar(select(Review).where(Review.id == review_id))
+    review = await session.scalar(select(Review).options(selectinload(Review.repository)).where(Review.id == review_id))
     if review is None:
         raise PrismError("review_not_found", "Review does not exist.", 404)
+    ensure_repository_access(review.repository.full_name)
     gaps = recommend_test_gaps(review.changed_paths, set())
     return [{"source_path": gap.source_path, "suggested_path": gap.suggested_path, "reason": gap.reason} for gap in gaps]
 

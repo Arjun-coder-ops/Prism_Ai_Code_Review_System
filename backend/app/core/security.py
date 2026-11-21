@@ -34,3 +34,9 @@ async def enforce_rate_limit(request: Request) -> None:
     if len(bucket) >= limit:
         raise PrismError("rate_limited", "Too many requests; retry later.", 429)
     bucket.append(now)
+
+
+def ensure_repository_access(full_name: str) -> None:
+    allowed = get_settings().authorized_repository_list
+    if allowed and full_name.lower() not in allowed:
+        raise PrismError("repository_forbidden", "The configured principal cannot access this repository.", 403)

@@ -21,3 +21,10 @@ def test_unconfigured_api_key_keeps_local_flow_open(monkeypatch) -> None:
     coroutine = security.require_api_key(SimpleNamespace(headers={}))
     with pytest.raises(StopIteration):
         coroutine.send(None)
+
+
+def test_repository_allowlist_rejects_unscoped_data(monkeypatch) -> None:
+    monkeypatch.setattr(security, "get_settings", lambda: SimpleNamespace(authorized_repository_list={"acme/allowed"}))
+    with pytest.raises(PrismError) as error:
+        security.ensure_repository_access("acme/private")
+    assert error.value.status_code == 403

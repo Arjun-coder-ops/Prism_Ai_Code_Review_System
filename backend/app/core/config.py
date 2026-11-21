@@ -15,12 +15,17 @@ class Settings(BaseSettings):
     github_private_key_path: str | None = None
     api_key: str | None = None
     rate_limit_per_minute: int = 30
+    authorized_repositories: str = ""
     allow_private_ai: bool = False
     cors_origins: str = "http://localhost:5173"
 
     @property
     def cors_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+
+    @property
+    def authorized_repository_list(self) -> set[str]:
+        return {value.strip().lower() for value in self.authorized_repositories.split(",") if value.strip()}
 
 
 @lru_cache

@@ -11,6 +11,8 @@
 - Review workers re-check the head SHA after file retrieval and reject stale analyses.
 - Evidence verification requires an exact normalized changed-line match instead of substring containment.
 - Outbox dispatch is capped at ten attempts with exponential delay metadata; stale review leases are recoverable by a scheduled task.
+- Review-detail, findings, impact, and test-gap reads require the configured API key and repository allowlist in protected deployments.
+- PostgreSQL/Redis integration tests cover duplicate delivery, expired lease recovery, concurrent claims, and durable outbox state.
 
 ## Remaining blockers
 
