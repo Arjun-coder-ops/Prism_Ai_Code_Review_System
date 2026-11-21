@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     gemini_model: str = "gemini-2.0-flash"
     ai_timeout_seconds: float = 30.0
     ai_max_retries: int = 2
+    groq_cost_per_1k_tokens: float = 0.0
+    gemini_cost_per_1k_tokens: float = 0.0
     allow_private_ai: bool = False
     cors_origins: str = "http://localhost:5173"
 

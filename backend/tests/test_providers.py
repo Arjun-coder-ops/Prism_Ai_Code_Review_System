@@ -26,10 +26,11 @@ def test_private_ai_is_denied_by_default() -> None:
 
 
 def test_provider_selection_prefers_groq_with_gemini_fallback() -> None:
-    provider = build_provider(Settings(groq_api_key="g", gemini_api_key="g2"))
+    provider = build_provider(Settings(groq_api_key="g", gemini_api_key="g2", groq_cost_per_1k_tokens=0.5))
     assert isinstance(provider, FallbackProvider)
     assert isinstance(provider.primary, GroqProvider)
     assert isinstance(provider.fallback, GeminiProvider)
+    assert provider.primary.cost_per_1k_tokens == 0.5
 
 
 def test_fallback_provider_uses_secondary_on_primary_failure() -> None:

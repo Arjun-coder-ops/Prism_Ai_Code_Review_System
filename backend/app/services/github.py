@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import base64
 import re
 from dataclasses import dataclass
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import quote, urlparse
 
 import httpx
 
@@ -98,3 +99,32 @@ async def fetch_repository_tree(ref: PullRequestRef, commit_sha: str, token: str
     if not isinstance(payload, dict) or payload.get("truncated") is True or not isinstance(payload.get("tree"), list):
         raise PrismError("github_invalid_tree", "GitHub returned an incomplete repository tree.", 502)
     return [item["path"] for item in payload["tree"] if isinstance(item, dict) and item.get("type") == "blob" and isinstance(item.get("path"), str)]
+
+
+async def fetch_repository_file(ref: PullRequestRef, path: str, commit_sha: str, token: str | None = None) -> bytes:
+    """Fetch one commit-pinned file for local, non-executing analyzer snapshots."""
+    if not path or path.startswith("/") or ".." in path.split("/"):
+        raise PrismError("github_invalid_path", "Repository file path is unsafe.", 400)
+    headers = {"Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28"}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    url = f"https://api.github.com/repos/{ref.owner}/{ref.repo}/contents/{quote(path, safe='/')}?ref={quote(commit_sha, safe='')}"
+    async with httpx.AsyncClient(timeout=httpx.Timeout(20.0, connect=5.0), follow_redirects=False) as client:
+        response = await client.get(url, headers=headers)
+    if response.status_code == 404:
+        raise PrismError("github_file_not_found", "The commit-pinned repository file was not found.", 404)
+    if response.status_code == 429 or response.status_code >= 500:
+        raise PrismError("github_file_unavailable", "The repository file is temporarily unavailable.", 503)
+    if response.status_code >= 400:
+        raise PrismError("github_file_failed", "GitHub rejected the repository file request.", 502)
+    payload = response.json()
+    encoded = payload.get("content") if isinstance(payload, dict) else None
+    if not isinstance(encoded, str) or payload.get("encoding") != "base64":
+        raise PrismError("github_invalid_file", "GitHub returned an unsupported repository file.", 502)
+    try:
+        content = base64.b64decode(encoded, validate=False)
+    except (ValueError, TypeError) as exc:
+        raise PrismError("github_invalid_file", "GitHub returned invalid repository file content.", 502) from exc
+    if len(content) > 1_000_000:
+        raise PrismError("github_file_too_large", "Repository files larger than 1 MB are not analyzed.", 413)
+    return content

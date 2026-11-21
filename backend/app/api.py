@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, Request, status
 from fastapi.responses import Response
 from kombu.exceptions import OperationalError
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -19,6 +19,11 @@ from app.core.errors import PrismError
 from app.core.metrics import review_requests
 from app.core.security import enforce_rate_limit, ensure_repository_access, require_api_key
 from app.db.session import get_session
+from app.github.auth import (
+    fetch_installation_repositories,
+    fetch_installation_token,
+    load_private_key,
+)
 from app.github.webhooks import payload_hash, verify_signature
 from app.intelligence.impact import infer_change_impact
 from app.intelligence.test_gaps import recommend_test_gaps
@@ -149,8 +154,45 @@ async def github_webhook(request: Request, session: SessionDep) -> dict[str, str
         action = payload.get("action")
         installation.account_login = login
         installation.suspended_at = datetime.now(UTC) if action in {"suspend", "deleted"} else None
+        if action in {"suspend", "deleted"}:
+            await session.execute(update(Repository).where(Repository.installation_id == installation.id).values(installation_id=None))
+        settings = get_settings()
+        if action in {"created", "unsuspend"} and settings.github_app_id and settings.github_private_key_path:
+            token = await fetch_installation_token(settings.github_app_id, load_private_key(settings.github_private_key_path), installation_id)
+            for item in await fetch_installation_repositories(token):
+                full_name = item.get("full_name")
+                if not isinstance(full_name, str):
+                    continue
+                repo = await session.scalar(select(Repository).where(Repository.full_name == full_name))
+                if repo is None:
+                    repo = Repository(full_name=full_name)
+                    session.add(repo)
+                repo.github_id = item.get("id") if isinstance(item.get("id"), int) else repo.github_id
+                repo.is_private = bool(item.get("private"))
+                repo.installation_id = installation.id
         await session.commit()
         return {"status": "installation_synced"}
+    if event_name == "installation_repositories" and isinstance(installation_id, int):
+        installation = await session.scalar(select(GithubInstallation).where(GithubInstallation.installation_id == installation_id))
+        if installation is None or installation.suspended_at is not None:
+            raise PrismError("installation_not_authorized", "The GitHub installation is not authorized.", 403)
+        for item in payload.get("repositories_added", []):
+            if not isinstance(item, dict) or not isinstance(item.get("full_name"), str):
+                continue
+            repo = await session.scalar(select(Repository).where(Repository.full_name == item["full_name"]))
+            if repo is None:
+                repo = Repository(full_name=item["full_name"])
+                session.add(repo)
+            repo.github_id = item.get("id") if isinstance(item.get("id"), int) else repo.github_id
+            repo.is_private = bool(item.get("private"))
+            repo.installation_id = installation.id
+        for item in payload.get("repositories_removed", []):
+            if isinstance(item, dict) and isinstance(item.get("full_name"), str):
+                repo = await session.scalar(select(Repository).where(Repository.full_name == item["full_name"], Repository.installation_id == installation.id))
+                if repo is not None:
+                    repo.installation_id = None
+        await session.commit()
+        return {"status": "repositories_synced"}
     if event_name == "pull_request" and payload.get("action") in {"opened", "reopened", "synchronize"}:
         repository_data = payload.get("repository") or {}
         pull_request = payload.get("pull_request") or {}

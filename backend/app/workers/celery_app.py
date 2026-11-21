@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import asyncio
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import Any
 
 from celery import Celery  # type: ignore[import-untyped]
@@ -11,6 +13,7 @@ from sqlalchemy.orm import selectinload
 
 from app.ai.providers import ReviewContext, build_provider, parse_candidates
 from app.analysis.static import candidates_from_diff
+from app.analysis.tools import analyzer_names, run_analyzer
 from app.core.config import get_settings
 from app.core.errors import PrismError
 from app.db.session import SessionLocal
@@ -21,6 +24,7 @@ from app.services.github import (
     ensure_head_sha_stable,
     fetch_pull_request,
     fetch_pull_request_files,
+    fetch_repository_file,
     fetch_repository_tree,
     parse_pull_request_url,
 )
@@ -180,11 +184,13 @@ async def _process_review(review_id: str) -> str:
                 if verified is None:
                     continue
                 findings.append(Finding(review_id=review.id, path=candidate.path, start_line=candidate.line, end_line=candidate.line, severity=candidate.severity, category=candidate.category, title=candidate.title, explanation=candidate.explanation, evidence=verified.evidence, verification_state="verified"))
+        findings.extend(await _run_static_analyzers(review.id, ref, initial_sha, token, changed_lines))
         if not (review.repository is not None and review.repository.is_private and not settings.allow_private_ai):
             provider = build_provider(settings)
             payload = await provider.candidates(ReviewContext("\n".join(diff_chunks)[:100_000], bool(review.repository and review.repository.is_private)))
             review.ai_provider = provider.provider_name
             review.ai_tokens = provider.last_usage.total_tokens
+            review.ai_cost_usd = provider.last_usage.estimated_cost_usd
             for candidate in parse_candidates(payload):
                 lines = changed_lines.get(candidate.path)
                 if not lines:
@@ -199,3 +205,42 @@ async def _process_review(review_id: str) -> str:
         review.lease_until = None
         await session.commit()
         return str(review.status.value)
+
+
+async def _run_static_analyzers(review_id: Any, ref: Any, commit_sha: str, token: str | None, changed_lines: dict[str, list[Any]]) -> list[Finding]:
+    """Analyze sanitized commit snapshots and retain only findings on added lines."""
+    paths = [path for path in changed_lines if Path(path).suffix.lower() in {".py", ".js", ".jsx", ".ts", ".tsx", ".json", ".yaml", ".yml", ".go", ".java", ".rb", ".php"}]
+    if not paths:
+        return []
+    with TemporaryDirectory(prefix="prism-analyzers-") as directory:
+        root = Path(directory)
+        available: list[str] = []
+        for path in paths[:50]:
+            try:
+                content = await fetch_repository_file(ref, path, commit_sha, token)
+            except PrismError:
+                continue
+            target = (root / path).resolve()
+            if root not in target.parents:
+                continue
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(content)
+            available.append(path)
+        results = []
+        for tool in analyzer_names(available):
+            results.extend(run_analyzer(tool, root, available))
+        findings: list[Finding] = []
+        for result in results:
+            path = Path(result.path).as_posix()
+            if path.startswith("/"):
+                try:
+                    path = Path(result.path).resolve().relative_to(root).as_posix()
+                except ValueError:
+                    continue
+            lines = changed_lines.get(path, [])
+            diff_line = next((line for line in lines if line.kind == "added" and line.line == result.line), None)
+            if diff_line is None:
+                continue
+            severity = {"error": "high", "warning": "medium", "1": "medium", "2": "high"}.get(result.severity.lower(), "low")
+            findings.append(Finding(review_id=review_id, path=path, start_line=result.line, end_line=result.line, severity=severity, category=result.tool, title=result.rule_id or f"{result.tool} finding", explanation=result.message or "Static analyzer reported a finding.", evidence={"line": diff_line.content, "source": result.tool, "rule_id": result.rule_id}, verification_state="verified"))
+        return findings

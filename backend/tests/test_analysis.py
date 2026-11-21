@@ -41,6 +41,12 @@ def test_evidence_requires_the_full_changed_line() -> None:
     assert verify_candidate(candidate, lines) is None
 
 
+def test_high_risk_finding_requires_an_independent_signal() -> None:
+    lines = [DiffLine("src/a.py", 4, "added", "value = user_input")]
+    candidate = CandidateFinding("src/a.py", 4, "high", "security", "injection", "unsafe", "value = user_input")
+    assert verify_candidate(candidate, lines) is None
+
+
 def test_stale_head_sha_is_rejected() -> None:
     ensure_head_sha_stable("a" * 40, "a" * 40)
     from app.core.errors import PrismError
