@@ -6,7 +6,7 @@
 | M1 Public PR analysis | Validated canonical GitHub URL, commit-pinned retrieval, unified-diff parser, persisted review state and findings UI | Current slice verified; live credentials pending |
 | M2 Durable processing | Atomic claims, leases, retries, cancellation and outage recovery tests | Current slice implemented; crash-recovery integration pending |
 | M3 GitHub App | JWT, installation tokens, webhook signature/idempotency, publication | Current slice implemented; live App pending |
-| M4 AI verification | Provider adapters, structured candidates, independent evidence verification/abstention | Deterministic slice implemented; providers pending |
+| M4 AI verification | Provider adapters, structured candidates, independent evidence verification/abstention | Current slice implemented; live providers pending |
 | M5 Intelligence | Tree-sitter context and change impact | Change-impact helper implemented; Tree-sitter pending |
 | M6 Test gaps | Test discovery and actionable gap recommendations | Recommendation helper implemented; discovery pending |
 | M7 Evaluations | Versioned datasets, graders and reports | Scoring helper implemented; datasets pending |

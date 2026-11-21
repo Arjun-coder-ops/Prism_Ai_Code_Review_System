@@ -6,7 +6,7 @@ Observed in this workspace:
 
 - `python -m ruff check app tests`: passed.
 - `python -m mypy app`: passed with no issues.
-- `python -m pytest -q`: passed, 21 tests.
+- `python -m pytest -q`: passed, 23 tests.
 - `python -m alembic upgrade head` from `backend/` against Docker PostgreSQL: passed; current revision `0003_github_events`.
 - PostgreSQL schema query: 3 M3 tables present in addition to the foundation tables.
 - `npm run build`: passed with Vite.
