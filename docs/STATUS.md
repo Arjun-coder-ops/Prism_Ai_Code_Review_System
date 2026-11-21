@@ -26,7 +26,7 @@ Updated 2026-11-21.
 
 Live GitHub App credentials, LLM providers, and browser end-to-end tests are not configured in this environment. The in-app browser could not reach the local Vite server, so rendered viewport/accessibility evidence remains pending. No production deployment or external repository comments are performed by this change.
 
-Verification evidence: `ruff check app tests` passed; `mypy app` passed with no issues; default `python -m pytest -q` passed with 37 tests and 6 integration skips; the previously verified Docker PostgreSQL/Redis suite passed 5 tests. The new FastAPI webhook integration test is present but this run could not rebuild Docker because the package registry timed out; Alembic remains at `0007_test_paths`; `npm run build` passed previously. Live GitHub App/LLM credentials remain unconfigured.
+Verification evidence: `ruff check app tests` passed; `mypy app` passed with no issues; default `python -m pytest -q` passed with 37 tests and 6 integration skips; GitHub Actions run 44934502456 passed backend including all 6 PostgreSQL/Redis integration tests and passed frontend. The local Docker rebuild was blocked by a transient package-registry timeout; Alembic remains at `0007_test_paths`; `npm run build` passed in CI. Live GitHub App/LLM credentials remain unconfigured.
 
 Weighted completion estimate: **59.9%**, up from 57.8% at `bfb760a`; see `MILESTONE_AUDIT.md` for milestone fractions and weighted contributions.
 
