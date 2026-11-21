@@ -28,4 +28,6 @@ Live GitHub App credentials, LLM providers, and browser end-to-end tests are not
 
 Verification evidence: `ruff check app tests` passed; `mypy app` passed with no issues; default `python -m pytest -q` passed with 32 tests and 5 integration skips; the Docker PostgreSQL/Redis integration suite passed 5 tests; Alembic is at `0007_test_paths`; `npm run build` passed. Live GitHub App/LLM credentials remain unconfigured.
 
+Weighted completion estimate: **57.8%**, up from approximately 49% at `99adb3a`; see `MILESTONE_AUDIT.md` for milestone fractions and weighted contributions.
+
 Full tracked-source checkpoint archive: `C:\Users\gogua\OneDrive\Documents\ChatGPT\PRISM-Deliverables\PRISM-Full-Project-Checkpoint.zip` (clean extraction verified; checksum is in the adjacent `.sha256` sidecar file). Major live-provider, browser, and deployment requirements remain explicitly unfinished.

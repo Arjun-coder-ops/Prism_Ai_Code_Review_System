@@ -24,5 +24,6 @@ This pull request advances `arjunpush` toward `main` with a focused security and
 - Mypy: passed
 - Pytest: 32 passed locally; 5 Docker integration tests passed
 - Alembic upgrade against Docker PostgreSQL: passed at `0007_test_paths`
+- Weighted M0-M10 scope estimate: 57.8%; major live and production requirements remain unverified.
 
 Live GitHub credentials, distributed deployment checks, and production provider credentials remain explicitly out of scope for this local verification.
