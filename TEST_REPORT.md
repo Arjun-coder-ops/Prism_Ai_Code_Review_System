@@ -14,6 +14,6 @@ Observed in this workspace:
 - `docker compose config`: passed.
 - `docker compose up -d --build api worker frontend`, then `GET http://localhost:8000/api/health`: passed (`{"status":"ok","version":"0.1.0"}`); frontend returned HTTP 200.
 - `.github/workflows/ci.yml` parsed locally and now provisions PostgreSQL/Redis, runs Ruff, mypy, migrations, and pytest before the frontend job.
-- Partial archive is verified after clean extraction; its SHA-256 is recorded in the adjacent `.sha256` sidecar file.
+- Complete tracked-source archive is verified after clean extraction; its SHA-256 is recorded in the adjacent `.sha256` sidecar file.
 
 Live PostgreSQL, Redis, GitHub, and browser checks remain pending because no external credentials were supplied.
