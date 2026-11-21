@@ -6,14 +6,16 @@ Observed in this workspace:
 
 - `python -m ruff check app tests`: passed.
 - `python -m mypy app`: passed with no issues.
-- `python -m pytest -q`: passed, 24 tests, including the executable `review-v1` evaluation fixture.
-- `python -m alembic upgrade head` from `backend/` against Docker PostgreSQL: passed; current revision `0004_review_paths`.
-- PostgreSQL schema query: M3 event/outbox tables plus the `reviews.changed_paths` intelligence field are present in addition to the foundation tables.
+- `python -m pytest -q`: passed, 37 tests with 6 integration tests skipped by default, including provider selection/fallback and cost configuration, analyzer normalization/path safety, commit-pinned file path safety, stale-SHA, strict evidence, API-key, repository allowlist, retry-state, and executable `review-v1` regression coverage.
+- `PRISM_INTEGRATION=1 python -m pytest -q tests/integration` previously passed locally with 5 core PostgreSQL/Redis tests; GitHub Actions run 44934502456 passed all 6 integration tests, including the FastAPI installation repository synchronization flow.
+- `python -m alembic upgrade head` from `backend/` against Docker PostgreSQL: passed; current revision `0007_test_paths`.
+- PostgreSQL schema query: installation-bound repositories, bounded outbox retry fields, M3 event/outbox tables, and the `reviews.changed_paths` intelligence field are present.
 - `npm run build`: passed with Vite.
 - The local in-app browser could not reach the Vite dev server, so rendered viewport/accessibility evidence is explicitly untested; source and production-build checks passed.
 - `docker compose config`: passed.
+- The local Docker rebuild was blocked by a transient Python package registry read timeout; the same integration path passed in GitHub Actions.
 - `docker compose up -d --build api worker frontend`, then `GET http://localhost:8000/api/health`: passed (`{"status":"ok","version":"0.1.0"}`); frontend returned HTTP 200.
-- `.github/workflows/ci.yml` parsed locally and now provisions PostgreSQL/Redis, runs Ruff, mypy, migrations, and pytest before the frontend job.
-- Complete tracked-source archive is verified after clean extraction; its SHA-256 is recorded in the adjacent `.sha256` sidecar file.
+- `.github/workflows/ci.yml` parsed locally and now provisions PostgreSQL/Redis, runs Ruff, mypy, migrations, the default pytest suite, and the integration suite before the frontend job. Compose includes a dedicated Celery Beat service.
+- Full tracked-source checkpoint archive is verified after clean extraction; its SHA-256 is recorded in the adjacent `.sha256` sidecar file.
 
 Live PostgreSQL, Redis, GitHub, and browser checks remain pending because no external credentials were supplied.

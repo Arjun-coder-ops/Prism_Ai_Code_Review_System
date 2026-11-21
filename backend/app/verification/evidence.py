@@ -14,9 +14,21 @@ class VerifiedFinding:
 
 def verify_candidate(candidate: CandidateFinding, lines: list[DiffLine]) -> VerifiedFinding | None:
     for line in lines:
-        if line.path == candidate.path and line.line == candidate.line and line.kind == "added" and candidate.evidence in line.content:
+        if line.path == candidate.path and line.line == candidate.line and line.kind == "added" and candidate.evidence.strip() == line.content.strip() and independent_signal(candidate, line.content):
             return VerifiedFinding(candidate, {"line": line.content, "source": "unified_diff"})
     return None
+
+
+def independent_signal(candidate: CandidateFinding, content: str) -> bool:
+    """Require a category-specific signal for high-risk model findings."""
+    if candidate.category.lower() not in {"security", "reliability"} or candidate.severity.lower() not in {"high", "critical", "medium"}:
+        return True
+    normalized = content.lower()
+    signals = {
+        "security": ("eval(", "exec(", "os.system", "subprocess", "innerhtml", "dangerouslysetinnerhtml", "pickle.loads"),
+        "reliability": ("except: pass", "except exception: pass", "timeout", "retry", "raise "),
+    }
+    return any(signal in normalized for signal in signals[candidate.category.lower()])
 
 
 def verify_candidates(candidates: list[CandidateFinding], lines: list[DiffLine]) -> list[VerifiedFinding]:

@@ -32,6 +32,11 @@ jobs:
         env:
           PRISM_ALEMBIC_DATABASE_URL: postgresql+psycopg://prism:prism@localhost:5432/prism
       - run: pytest
+      - run: pytest -q tests/integration
+        env:
+          PRISM_INTEGRATION: '1'
+          PRISM_DATABASE_URL: postgresql+asyncpg://prism:prism@localhost:5432/prism
+          PRISM_REDIS_URL: redis://localhost:6379/0
   frontend:
     runs-on: ubuntu-latest
     defaults: {run: {working-directory: frontend}}

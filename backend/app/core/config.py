@@ -13,12 +13,29 @@ class Settings(BaseSettings):
     github_app_id: str | None = None
     github_webhook_secret: str | None = None
     github_private_key_path: str | None = None
+    api_key: str | None = None
+    rate_limit_per_minute: int = 30
+    authorized_repositories: str = ""
+    groq_api_key: str | None = None
+    groq_endpoint: str = "https://api.groq.com/openai/v1/chat/completions"
+    groq_model: str = "llama-3.3-70b-versatile"
+    gemini_api_key: str | None = None
+    gemini_endpoint: str = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+    gemini_model: str = "gemini-2.0-flash"
+    ai_timeout_seconds: float = 30.0
+    ai_max_retries: int = 2
+    groq_cost_per_1k_tokens: float = 0.0
+    gemini_cost_per_1k_tokens: float = 0.0
     allow_private_ai: bool = False
     cors_origins: str = "http://localhost:5173"
 
     @property
     def cors_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+
+    @property
+    def authorized_repository_list(self) -> set[str]:
+        return {value.strip().lower() for value in self.authorized_repositories.split(",") if value.strip()}
 
 
 @lru_cache
